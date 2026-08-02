@@ -164,11 +164,11 @@ bool argos_handle_command(uint8_t *data, uint8_t length) {
 
     case argos_id_set_combo: {
         uint8_t combo_index = command_data[0];
-        uint16_t keycode = command_data[1] | (command_data[2] << 8);
+        uint16_t keycode = (command_data[1] << 8) | command_data[2];
         argos_combo_set_keycode(combo_index, keycode, 0);
         for (int i = 0; i < ARGOS_KEYS_PER_COMBO; i++) {
             uint16_t key =
-                command_data[3 + i * 2] | (command_data[4 + i * 2] << 8);
+                (command_data[3 + i * 2] << 8) | command_data[4 + i * 2];
             argos_combo_set_keycode(combo_index, key, i + 1);
         }
         // reload combo from eeprom
@@ -239,7 +239,7 @@ bool argos_handle_command(uint8_t *data, uint8_t length) {
         uint8_t index = command_data[0];
         for (int i = 0; i < 4; i++) { // 4 keys per tap dance
             uint16_t keycode =
-                command_data[i * 2 + 1] | (command_data[i * 2 + 2] << 8);
+                (command_data[i * 2 + 1] << 8) | command_data[i * 2 + 2];
             argos_tap_dance_set_keycode(index, keycode, i);
         }
         send_data = true; // ack
