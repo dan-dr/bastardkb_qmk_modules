@@ -164,15 +164,26 @@ bool argos_handle_command(uint8_t *data, uint8_t length) {
 
     case argos_id_set_combo: {
         uint8_t combo_index = command_data[0];
-        uint16_t keycode = (command_data[1] << 8) | command_data[2];
-        argos_combo_set_keycode(combo_index, keycode, 0);
-        for (int i = 0; i < ARGOS_KEYS_PER_COMBO; i++) {
-            uint16_t key =
-                (command_data[3 + i * 2] << 8) | command_data[4 + i * 2];
-            argos_combo_set_keycode(combo_index, key, i + 1);
+        argos_combo_t combo;
+        if (argos_combo_read_eeprom(combo_index, &combo)) {
+            combo.keycode = (command_data[1] << 8) | command_data[2];
+            bool is_valid = true;
+            for (int i = 0; i < ARGOS_KEYS_PER_COMBO; i++) {
+                uint16_t key =
+                    (command_data[3 + i * 2] << 8) | command_data[4 + i * 2];
+                for (int j = 0; j < i; j++) {
+                    if (key != 0 && combo.keys[j] == key) {
+                        is_valid = false;
+                        break;
+                    }
+                }
+                combo.keys[i] = key;
+            }
+            if (is_valid) {
+                argos_combo_write_eeprom(combo_index, &combo);
+                argos_combo_load_from_eeprom(combo_index);
+            }
         }
-        // reload combo from eeprom
-        argos_combo_load_from_eeprom(combo_index);
         send_data = true; // ack
         break;
     }
