@@ -107,6 +107,8 @@ _Static_assert(sizeof(argos_td_entry_t) <= 11, "Invalid size for argos_td_entry_
 
 __attribute__((weak)) void argos_read_eeprom(uint16_t offset, void *buf, uint16_t size);
 __attribute__((weak)) void argos_write_eeprom(uint16_t offset, const void *buf, uint16_t size);
+/* Argos owns get_tapping_term(); keymaps override this instead. */
+uint16_t get_tapping_term_keymap(uint16_t keycode, keyrecord_t *record);
 void keyboard_post_init_argos(void);
 bool argos_handle_command(uint8_t* data, uint8_t length);
 void argos_raw_hid_send_captured_key(void);

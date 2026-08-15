@@ -100,6 +100,7 @@ void keyboard_post_init_argos(void) {
 bool argos_handle_command(uint8_t *data, uint8_t length) {
     uint8_t protocol = data[0];
 
+    
     if (protocol != ARGOS_CMD_PREFIX)
         return false; // not an Argos command
 
@@ -585,8 +586,14 @@ void argos_keycode_tap(uint16_t keycode) {
 }
 
 // override tapping term
-uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
+__attribute__((weak)) uint16_t get_tapping_term_keymap(uint16_t keycode, keyrecord_t *record) {
+    (void)keycode;
+    (void)record;
     return argos_config.global_tapping_term;
+}
+
+uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
+    return get_tapping_term_keymap(keycode, record);
 }
 
 // override combo term
