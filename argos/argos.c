@@ -79,7 +79,8 @@ void keyboard_post_init_argos(void) {
         argos_config.has_copied_qmk_config = true;
         argos_config.themeId = 16; // default to dark theme
         argos_config.has_displayed_welcome_message = false;
-        argos_config.global_tapping_term = TAPPING_TERM;
+        /* 0 = unset: firmware TAPPING_TERM / g_tapping_term, not Argos. */
+        argos_config.global_tapping_term = 0;
         argos_config.global_combo_term = COMBO_TERM;
         argos_write_eeprom(ARGOS_OFFSET_CONFIG, &argos_config,
                            sizeof(argos_config));  
@@ -165,26 +166,15 @@ bool argos_handle_command(uint8_t *data, uint8_t length) {
 
     case argos_id_set_combo: {
         uint8_t combo_index = command_data[0];
-        argos_combo_t combo;
-        if (argos_combo_read_eeprom(combo_index, &combo)) {
-            combo.keycode = (command_data[1] << 8) | command_data[2];
-            bool is_valid = true;
-            for (int i = 0; i < ARGOS_KEYS_PER_COMBO; i++) {
-                uint16_t key =
-                    (command_data[3 + i * 2] << 8) | command_data[4 + i * 2];
-                for (int j = 0; j < i; j++) {
-                    if (key != 0 && combo.keys[j] == key) {
-                        is_valid = false;
-                        break;
-                    }
-                }
-                combo.keys[i] = key;
-            }
-            if (is_valid) {
-                argos_combo_write_eeprom(combo_index, &combo);
-                argos_combo_load_from_eeprom(combo_index);
-            }
+        uint16_t keycode = command_data[1] << 8 | (command_data[2]);
+        argos_combo_set_keycode(combo_index, keycode, 0);
+        for (int i = 0; i < ARGOS_KEYS_PER_COMBO; i++) {
+            uint16_t key =
+                command_data[3 + i * 2] << 8 | (command_data[4 + i * 2]);
+            argos_combo_set_keycode(combo_index, key, i+1); // first key is the result keycode
         }
+        // reload combo from eeprom
+        argos_combo_load_from_eeprom(combo_index);
         send_data = true; // ack
         break;
     }
@@ -251,7 +241,7 @@ bool argos_handle_command(uint8_t *data, uint8_t length) {
         uint8_t index = command_data[0];
         for (int i = 0; i < 4; i++) { // 4 keys per tap dance
             uint16_t keycode =
-                (command_data[i * 2 + 1] << 8) | command_data[i * 2 + 2];
+                (command_data[i * 2 + 1] << 8) | (command_data[i * 2 + 2]);
             argos_tap_dance_set_keycode(index, keycode, i);
         }
         send_data = true; // ack
@@ -444,7 +434,8 @@ bool argos_handle_command(uint8_t *data, uint8_t length) {
     case argos_id_set_dragscroll_dpi: {
 #ifdef BK_HAS_POINTING_DEVICE
             send_data = true; // ack
-            bkpd_set_dragscroll_dpi(command_data[0]);
+            // TODO
+            // bkpd_set_dragscroll_dpi(command_data[0]);
 #endif
         break;
     }
@@ -585,16 +576,25 @@ void argos_keycode_tap(uint16_t keycode) {
     argos_keycode_up(keycode);
 }
 
-// override tapping term
-__attribute__((weak)) uint16_t get_tapping_term_keymap(uint16_t keycode, keyrecord_t *record) {
+#ifndef ARGOS_DISABLE_GET_TAPPING_TERM
+/* Strong override of QMK's weak get_tapping_term so the Argos GUI slider
+ * actually changes hold-taps. 0 / 0xFFFF means unset: use firmware default.
+ * Keymaps that need per-key terms should define ARGOS_DISABLE_GET_TAPPING_TERM
+ * and implement get_tapping_term() themselves. */
+uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
     (void)keycode;
     (void)record;
-    return argos_config.global_tapping_term;
+    uint16_t term = argos_config.global_tapping_term;
+    if (term && term != 0xFFFF) {
+        return term;
+    }
+#ifdef DYNAMIC_TAPPING_TERM_ENABLE
+    return g_tapping_term;
+#else
+    return TAPPING_TERM;
+#endif
 }
-
-uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
-    return get_tapping_term_keymap(keycode, record);
-}
+#endif // ARGOS_DISABLE_GET_TAPPING_TERM
 
 // override combo term
 uint16_t get_combo_term(uint16_t combo_index, combo_t *combo) {

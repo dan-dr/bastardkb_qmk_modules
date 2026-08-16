@@ -23,7 +23,7 @@
 #define COMBO_TERM_PER_COMBO
 #endif
 
-// enables custom global tapping term by Argos
+// enables custom global tapping term by Argos (unless ARGOS_DISABLE_GET_TAPPING_TERM)
 #ifndef TAPPING_TERM_PER_KEY
 #define TAPPING_TERM_PER_KEY
 #endif

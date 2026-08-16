@@ -146,7 +146,7 @@ void argos_combo_listen_for_key(uint8_t *data) {
 }
 
 void argos_combo_reset_capturing_combo_key_index(uint8_t index) {
-    argos_combo_set_keycode(listening_combo_index, 0, index);
+    argos_combo_set_keycode(listening_combo_index, 0, listening_keycode_index);
 }
 
 // TODO this function is quite big... but separating it into smaller functions
@@ -170,7 +170,8 @@ void argos_combo_set_keycode(uint8_t combo_index, uint16_t keycode,
         is_valid = true;
     }
     // key input
-    else if (key_index - 1 < ARGOS_KEYS_PER_COMBO) {
+    else if ((key_index - 1 < ARGOS_KEYS_PER_COMBO) &&
+    key_index - 1 >= 0) {
         // Test for duplicates:
         // QMK does not like it when there are multiple of the same keys in the
         // combo. So we need to find any potential duplicates and set them to

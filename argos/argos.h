@@ -73,7 +73,7 @@ typedef struct PACKED {
     bool has_copied_qmk_config : 1;
     uint8_t themeId;
     bool has_displayed_welcome_message : 1;
-    uint16_t global_tapping_term; // in ms
+    uint16_t global_tapping_term; // in ms; 0 = unset (firmware default)
     uint16_t global_combo_term; // in ms
 } argos_config_t;
 _Static_assert(sizeof(argos_config_t) <= 7, "Invalid size for argos_config_t");
@@ -107,8 +107,6 @@ _Static_assert(sizeof(argos_td_entry_t) <= 11, "Invalid size for argos_td_entry_
 
 __attribute__((weak)) void argos_read_eeprom(uint16_t offset, void *buf, uint16_t size);
 __attribute__((weak)) void argos_write_eeprom(uint16_t offset, const void *buf, uint16_t size);
-/* Argos owns get_tapping_term(); keymaps override this instead. */
-uint16_t get_tapping_term_keymap(uint16_t keycode, keyrecord_t *record);
 void keyboard_post_init_argos(void);
 bool argos_handle_command(uint8_t* data, uint8_t length);
 void argos_raw_hid_send_captured_key(void);
